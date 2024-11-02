@@ -1,0 +1,29 @@
+[debug] [2024-10-18T07:10:21.290Z] ----------------------------------------------------------------------
+[debug] [2024-10-18T07:10:21.299Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\dell\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login
+[debug] [2024-10-18T07:10:21.300Z] CLI Version:   13.22.1
+[debug] [2024-10-18T07:10:21.300Z] Platform:      win32
+[debug] [2024-10-18T07:10:21.300Z] Node Version:  v20.12.0
+[debug] [2024-10-18T07:10:21.300Z] Time:          Fri Oct 18 2024 12:10:21 GMT+0500 (Pakistan Standard Time)
+[debug] [2024-10-18T07:10:21.301Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-10-18T07:10:21.307Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
+ 
+[debug] [2024-10-18T07:10:22.173Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2024-10-18T07:10:22.176Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2024-10-18T07:10:31.514Z] ----------------------------------------------------------------------
+[debug] [2024-10-18T07:10:31.525Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\dell\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js login
+[debug] [2024-10-18T07:10:31.529Z] CLI Version:   13.22.1
+[debug] [2024-10-18T07:10:31.529Z] Platform:      win32
+[debug] [2024-10-18T07:10:31.530Z] Node Version:  v20.12.0
+[debug] [2024-10-18T07:10:31.530Z] Time:          Fri Oct 18 2024 12:10:31 GMT+0500 (Pakistan Standard Time)
+[debug] [2024-10-18T07:10:31.530Z] ----------------------------------------------------------------------
+[debug] 
+[info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you.
+ 
+[info] i  To change your data collection preference at any time, run `firebase logout` and log in again. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=984945731&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...

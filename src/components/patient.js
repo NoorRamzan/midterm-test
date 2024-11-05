@@ -2,10 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { auth, db } from '../config/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, collection, getDocs, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, addDoc, deleteDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
-const Patient = () => {
+const PatientDashboard = () => {
   const [patientDetails, setPatientDetails] = useState({});
   const [name, setName] = useState('');
   const [contactDetails, setContactDetails] = useState('');
@@ -15,7 +15,7 @@ const Patient = () => {
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [dateTime, setDateTime] = useState('');
   const [notes, setNotes] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
+  const [appointments, setAppointments] = useState([]);
   const [showAppointment, setShowAppointment] = useState(false);
   const navigate = useNavigate();
 
@@ -25,6 +25,7 @@ const Patient = () => {
         setUserId(user.uid);
         await fetchPatientDetails(user.uid);
         await fetchDoctors();
+        await fetchAppointments(user.uid);
       } else {
         navigate('/login');
       }
@@ -58,11 +59,19 @@ const Patient = () => {
     setDoctors(doctorList);
   };
 
+  const fetchAppointments = async (patientId) => {
+    const appointmentsRef = collection(db, 'appointments');
+    const appointmentSnapshot = await getDocs(appointmentsRef);
+    const patientAppointments = appointmentSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(appointment => appointment.patientId === patientId);
+    setAppointments(patientAppointments);
+  };
+
   const handleSaveDetails = async () => {
     const patientDocRef = doc(db, 'patients', userId);
     await setDoc(patientDocRef, { name, contactDetails, medicalHistory }, { merge: true });
     alert("Patient details saved successfully.");
-    setIsEditing(false); // Exit editing mode after saving
   };
 
   const handleBookAppointment = async (e) => {
@@ -73,15 +82,21 @@ const Patient = () => {
     }
 
     try {
+      const appointmentDateTime = new Date(dateTime);
+      if (isNaN(appointmentDateTime.getTime())) {
+        throw new Error("Invalid date/time format. Please ensure it is correctly selected.");
+      }
+
       const appointmentRef = collection(db, 'appointments');
       await addDoc(appointmentRef, {
         doctorId: selectedDoctorId,
         patientId: userId,
-        dateTime: new Date(dateTime),
+        dateTime: appointmentDateTime,
         notes,
       });
       alert('Appointment booked successfully!');
       clearAppointmentForm();
+      await fetchAppointments(userId); // Refresh appointments
     } catch (error) {
       console.error("Error booking appointment: ", error);
       alert("Error booking appointment: " + error.message);
@@ -94,86 +109,73 @@ const Patient = () => {
     setNotes('');
   };
 
+  const handleDeleteAppointment = async (appointmentId) => {
+    const confirmed = window.confirm("Are you sure you want to delete this appointment?");
+    if (confirmed) {
+      await deleteDoc(doc(db, 'appointments', appointmentId));
+      alert("Appointment deleted successfully!");
+      await fetchAppointments(userId); // Refresh appointments
+    }
+  };
+
   const handleLogout = async () => {
     await auth.signOut();
     navigate('/login');
   };
 
   return (
-    <div className="flex flex-col items-center p-8 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Patient Dashboard</h1>
+    <div className="flex flex-col items-center p-10 bg-gradient-to-r from-purple-100 to-indigo-200 min-h-screen">
+      <h1 className="text-5xl font-extrabold mb-10 text-indigo-800">Patient Dashboard</h1>
 
       {/* Display patient details */}
-      <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md mb-4">
-        <h2 className="text-xl font-bold mb-4">Your Details</h2>
-        {isEditing ? (
-          <>
-            <label className="block mb-2">
-              Name:
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </label>
-            <label className="block mb-2">
-              Contact Details:
-              <input
-                type="text"
-                value={contactDetails}
-                onChange={(e) => setContactDetails(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </label>
-            <label className="block mb-2">
-              Medical History:
-              <textarea
-                value={medicalHistory}
-                onChange={(e) => setMedicalHistory(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </label>
-            <button
-              onClick={handleSaveDetails}
-              className="w-full py-2 font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600 transition duration-200"
-            >
-              Save Details
-            </button>
-            <button
-              onClick={() => setIsEditing(false)}
-              className="w-full py-2 mt-2 font-semibold text-white bg-gray-500 rounded-md hover:bg-gray-600 transition duration-200"
-            >
-              Cancel
-            </button>
-          </>
-        ) : (
-          <>
-            <p><strong>Name:</strong> {name}</p>
-            <p><strong>Contact Details:</strong> {contactDetails}</p>
-            <p><strong>Medical History:</strong> {medicalHistory}</p>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="mt-4 py-2 px-4 font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600 transition duration-200"
-            >
-              Edit Details
-            </button>
-          </>
-        )}
+      <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg mb-6">
+        <h2 className="text-2xl font-semibold mb-4 text-indigo-600">Your Details</h2>
+        <label className="block mb-2">
+          Name:
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+          />
+        </label>
+        <label className="block mb-2">
+          Contact Details:
+          <input
+            type="text"
+            value={contactDetails}
+            onChange={(e) => setContactDetails(e.target.value)}
+            className="w-full px-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+          />
+        </label>
+        <label className="block mb-2">
+          Medical History:
+          <textarea
+            value={medicalHistory}
+            onChange={(e) => setMedicalHistory(e.target.value)}
+            className="w-full px-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+          />
+        </label>
+        <button
+          onClick={handleSaveDetails}
+          className="w-full py-2 font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition duration-200 mb-2"
+        >
+          Save Details
+        </button>
       </div>
 
       {/* Button to toggle appointment form */}
       <button
         onClick={() => setShowAppointment(!showAppointment)}
-        className="mb-4 py-2 px-4 font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600 transition duration-200"
+        className="mb-4 py-2 px-4 font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition duration-200"
       >
         {showAppointment ? "Hide Appointment Form" : "Book an Appointment"}
       </button>
 
       {/* Display appointment form */}
       {showAppointment && (
-        <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-          <h2 className="text-xl font-bold mb-4">Book an Appointment</h2>
+        <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4 text-indigo-600">Book an Appointment</h2>
           <form onSubmit={handleBookAppointment}>
             <label className="block mb-2">
               Select Doctor:
@@ -181,7 +183,7 @@ const Patient = () => {
                 value={selectedDoctorId}
                 onChange={(e) => setSelectedDoctorId(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                className="w-full px-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
               >
                 <option value="">Select a doctor</option>
                 {doctors.map(doctor => (
@@ -198,7 +200,7 @@ const Patient = () => {
                 value={dateTime}
                 onChange={(e) => setDateTime(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                className="w-full px-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
               />
             </label>
             <label className="block mb-2">
@@ -206,12 +208,12 @@ const Patient = () => {
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+                className="w-full px-4 py-2 border border-indigo-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
               />
             </label>
             <button
               type="submit"
-              className="w-full py-2 font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600 transition duration-200"
+              className="w-full py-2 font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 transition duration-200"
             >
               Book Appointment
             </button>
@@ -219,9 +221,41 @@ const Patient = () => {
         </div>
       )}
 
+      {/* Appointments Table */}
+      <div className="w-full max-w-3xl p-6 bg-white rounded-lg shadow-lg mt-6">
+        <h2 className="text-2xl font-semibold mb-4 text-indigo-600">Your Appointments</h2>
+        <table className="min-w-full bg-white">
+          <thead>
+            <tr>
+              <th className="border px-4 py-2">Doctor</th>
+              <th className="border px-4 py-2">Date & Time</th>
+              <th className="border px-4 py-2">Notes</th>
+              <th className="border px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {appointments.map(appointment => (
+              <tr key={appointment.id}>
+                <td className="border px-4 py-2">{appointment.doctorId}</td>
+                <td className="border px-4 py-2">{new Date(appointment.dateTime).toLocaleString()}</td>
+                <td className="border px-4 py-2">{appointment.notes}</td>
+                <td className="border px-4 py-2">
+                  <button
+                    onClick={() => handleDeleteAppointment(appointment.id)}
+                    className="text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       <button
         onClick={handleLogout}
-        className="mt-4 py-2 px-4 font-semibold text-white bg-red-500 rounded-md hover:bg-red-600 transition duration-200"
+        className="mt-4 py-2 px-4 font-semibold text-white bg-red-600 rounded-md hover:bg-red-700 transition duration-200"
       >
         Logout
       </button>
@@ -229,8 +263,4 @@ const Patient = () => {
   );
 };
 
-export default Patient;
-
-
-
-      
+export default PatientDashboard;
